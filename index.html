@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>長度單位大挑戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .bounce {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-blue-400 relative overflow-hidden">
+        
+        <!-- 裝飾用小圖示 -->
+        <div class="absolute top-2 right-2 opacity-10 text-6xl">📏</div>
+        
+        <!-- 選擇年級畫面 -->
+        <div id="start-screen" class="text-center">
+            <h1 class="text-3xl font-bold text-blue-600 mb-4">長度單位大挑戰</h1>
+            <p class="text-gray-600 mb-8 font-medium">請選擇你的年級開始挑戰！ (共 25 題)</p>
+            <div class="space-y-4">
+                <button onclick="startGame(3)" class="w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 text-xl">
+                    三年級 <br><span class="text-sm font-normal">(毫米、公分、公尺)</span>
+                </button>
+                <button onclick="startGame(4)" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 text-xl">
+                    四、五年級 <br><span class="text-sm font-normal">(含 公里 挑戰)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 遊戲進行畫面 -->
+        <div id="quiz-screen" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div class="bg-blue-100 px-4 py-2 rounded-full text-blue-700 font-bold">
+                    <span id="current-index">1</span> / 25
+                </div>
+                <div id="grade-badge" class="bg-gray-100 px-3 py-1 rounded-lg text-xs font-bold text-gray-500"></div>
+                <div class="bg-green-100 px-4 py-2 rounded-full text-green-700 font-bold">
+                    <span id="score">0</span> 分
+                </div>
+            </div>
+
+            <div id="question-box" class="bg-yellow-50 rounded-2xl p-8 mb-8 border-2 border-yellow-200 text-center min-h-[160px] flex flex-col justify-center">
+                <h2 id="question-text" class="text-2xl font-bold text-gray-800 mb-2"></h2>
+                <p id="question-hint" class="text-3xl font-black text-blue-600"></p>
+            </div>
+
+            <div id="options-grid" class="grid grid-cols-2 gap-4">
+                <!-- 按鈕由 JS 動態生成 -->
+            </div>
+
+            <div id="feedback" class="mt-6 text-center h-8 font-bold text-lg"></div>
+        </div>
+
+        <!-- 結算畫面 -->
+        <div id="result-screen" class="hidden text-center">
+            <div class="text-6xl mb-4 bounce">🏆</div>
+            <h2 class="text-3xl font-bold text-blue-600 mb-2">挑戰完成！</h2>
+            <p class="text-gray-500 mb-6" id="result-msg"></p>
+            <div class="bg-blue-50 rounded-2xl p-6 mb-8">
+                <p class="text-lg text-gray-700">最終得分</p>
+                <p class="text-5xl font-black text-blue-600"><span id="final-score">0</span></p>
+            </div>
+            <button onclick="showStartScreen()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-full shadow-lg transition duration-200">
+                返回主選單
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const allQuestions = {
+            3: [
+                { item: "一枚硬幣的厚度", value: 2, unit: "毫米" },
+                { item: "彩色筆的長度", value: 15, unit: "公分" },
+                { item: "教室的高度", value: 3, unit: "公尺" },
+                { item: "橡皮擦的長度", value: 5, unit: "公分" },
+                { item: "一隻螞蟻的身長", value: 6, unit: "毫米" },
+                { item: "黑板的長度", value: 4, unit: "公尺" },
+                { item: "校門口到教室距離", value: 50, unit: "公尺" },
+                { item: "鉛筆盒的厚度", value: 3, unit: "公分" },
+                { item: "小螺絲釘的長度", value: 8, unit: "毫米" },
+                { item: "游泳池的長度", value: 25, unit: "公尺" },
+                { item: "手機的寬度", value: 7, unit: "公分" },
+                { item: "衛生紙盒的高度", value: 9, unit: "公分" },
+                { item: "迴紋針的長度", value: 30, unit: "毫米" },
+                { item: "身高大約是 140", value: 140, unit: "公分" },
+                { item: "公車的長度", value: 12, unit: "公尺" },
+                { item: "一元硬幣的直徑", value: 20, unit: "毫米" },
+                { item: "膠水瓶的高度", value: 12, unit: "公分" },
+                { item: "小貓的身長", value: 30, unit: "公分" },
+                { item: "書桌的寬度", value: 60, unit: "公分" },
+                { item: "電線桿的高度", value: 10, unit: "公尺" },
+                { item: "訂書針的寬度", value: 12, unit: "毫米" },
+                { item: "自動筆芯的粗細", value: 0.5, unit: "毫米" },
+                { item: "籃球場的長度", value: 28, unit: "公尺" },
+                { item: "長尺的長度", value: 30, unit: "公分" },
+                { item: "一棵大樹的高度", value: 15, unit: "公尺" }
+            ],
+            4: [
+                { item: "國道一號公路長度", value: 374, unit: "公里" },
+                { item: "台北101大樓高度", value: 508, unit: "公尺" },
+                { item: "手機的厚度", value: 9, unit: "毫米" },
+                { item: "馬拉松比賽距離", value: 42, unit: "公里" },
+                { item: "課桌椅的高度", value: 75, unit: "公分" },
+                { item: "玉山的高度", value: 3952, unit: "公尺" },
+                { item: "台北到高雄的距離", value: 350, unit: "公里" },
+                { item: "課本的厚度", value: 1, unit: "公分" },
+                { item: "一般訂書針的寬度", value: 12, unit: "毫米" },
+                { item: "田徑場跑道一圈", value: 400, unit: "公尺" },
+                { item: "捷運軌道的寬度", value: 1435, unit: "毫米" },
+                { item: "台灣南北的長度", value: 394, unit: "公里" },
+                { item: "自行車道的總長", value: 15, unit: "公里" },
+                { item: "旗桿的高度", value: 12, unit: "公尺" },
+                { item: "一根睫毛的長度", value: 8, unit: "毫米" },
+                { item: "登山步道的全長", value: 3500, unit: "公尺" },
+                { item: "蘇花公路長度", value: 118, unit: "公里" },
+                { item: "指甲生長一個月約", value: 3, unit: "毫米" },
+                { item: "一張悠遊卡的厚度", value: 1, unit: "毫米" },
+                { item: "貨櫃車的長度", value: 12, unit: "公尺" },
+                { item: "地球赤道的周長", value: 40075, unit: "公里" },
+                { item: "河邊步道的寬度", value: 4, unit: "公尺" },
+                { item: "餐桌的長度", value: 180, unit: "公分" },
+                { item: "筆記型電腦螢幕", value: 35, unit: "公分" },
+                { item: "一根頭髮的直徑", value: 0.1, unit: "毫米" }
+            ]
+        };
+
+        const unitsByGrade = {
+            3: ["毫米", "公分", "公尺"],
+            4: ["毫米", "公分", "公尺", "公里"]
+        };
+
+        let currentGrade = 3;
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        function showStartScreen() {
+            startScreen.classList.remove('hidden');
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+        }
+
+        function startGame(grade) {
+            currentGrade = grade;
+            // 隨機從題庫選 25 題並打亂
+            currentQuestions = [...allQuestions[grade]].sort(() => Math.random() - 0.5).slice(0, 25);
+            currentIndex = 0;
+            score = 0;
+            
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultScreen.classList.add('hidden');
+            
+            document.getElementById('grade-badge').innerText = grade === 3 ? "三年級模式" : "四五年級模式";
+            updateScore();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const feedback = document.getElementById('feedback');
+            feedback.innerText = "";
+            const q = currentQuestions[currentIndex];
+            
+            document.getElementById('current-index').innerText = currentIndex + 1;
+            document.getElementById('question-text').innerText = q.item;
+            document.getElementById('question-hint').innerText = q.value;
+
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = "";
+            
+            const currentUnits = unitsByGrade[currentGrade];
+            currentUnits.forEach(unit => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white hover:bg-blue-50 border-2 border-blue-200 rounded-xl py-4 font-bold text-gray-700 transition duration-200 shadow-sm active:bg-blue-100";
+                btn.innerText = unit;
+                btn.onclick = () => checkAnswer(unit);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedUnit) {
+            const correctAnswer = currentQuestions[currentIndex].unit;
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('#options-grid button');
+            
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedUnit === correctAnswer) {
+                score += 4; // 25題，每題4分共100分
+                updateScore();
+                feedback.innerText = "⭐ 太棒了！答對了！";
+                feedback.className = "mt-6 text-center h-8 font-bold text-lg text-green-500";
+            } else {
+                feedback.innerText = `❌ 不太對喔，正確答案是「${correctAnswer}」`;
+                feedback.className = "mt-6 text-center h-8 font-bold text-lg text-red-500";
+            }
+
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < currentQuestions.length) {
+                    showQuestion();
+                } else {
+                    endGame();
+                }
+            }, 1200);
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = score;
+        }
+
+        function endGame() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+            
+            let msg = "";
+            if (score === 100) msg = "你是長度單位大師！完美通關！";
+            else if (score >= 80) msg = "表現優異！對單位非常有感覺！";
+            else if (score >= 60) msg = "及格了，繼續加油！";
+            else msg = "別灰心，多觀察身邊的物品再試一次吧！";
+            document.getElementById('result-msg').innerText = msg;
+        }
+    </script>
+</body>
+</html>
